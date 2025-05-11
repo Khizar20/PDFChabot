@@ -1,18 +1,45 @@
-version: '3.8'
+version: '3.8' # You can remove this line, it's obsolete
+
 services:
-  backend:
-    build: .
-    ports:
-      - "8001:8000"  # Changed from 8000
-    volumes:
-      - ./:/app  # Attach volume for code
   frontend:
-    image: nginx:alpine
+    build: ./frontend       # This will now use your new Nginx-based Dockerfile
     ports:
-      - "81:80"  # Changed from 80
-  mongo:
-    image: mongo:5.0
+      - "3001:80"           # Map host port 3001 to Nginx's container port 80
+    container_name: pdfchat-frontend-2 # Keep as per your requirement
+    # volumes:
+    #   - ./frontend:/usr/share/nginx/html # For development, this mounts your local 'frontend'
+                                          # folder into the container, overriding what was COPIED.
+                                          # For a CI/CD build pipeline focused on creating an image,
+                                          # you typically rely on the COPY in the Dockerfile and might
+                                          # omit this runtime volume, or use it only for local dev.
+                                          # For the assignment, you might not need this volume mount here
+                                          # as the build artifact (image) should contain the code.
+    depends_on:
+      - backend
+    # Add restart policy if you want containers to restart automatically
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    ports:
+      - "5001:5000"       # FastAPI typically runs on 8000 or 5000 by default, adjust if needed
+    container_name: pdfchat-backend-2 # Keep as per your requirement
     volumes:
-      - mongo_data:/data/db
+      - ./backend:/app    # This is good for development with FastAPI to see code changes
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/pdfchat
+    depends_on:
+      - mongo
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27018:27017"
+    container_name: pdfchat-mongo-2 # Keep as per your requirement
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+
 volumes:
-  mongo_data:
+  mongo-data:
