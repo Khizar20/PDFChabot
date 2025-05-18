@@ -1,30 +1,52 @@
 pipeline {
     agent any
+    
     environment {
-        // Customize these variables:
-        GIT_REPO = 'https://github.com/Khizar20/PDFChabot.git'
-        GIT_BRANCH = 'main'
-        DOCKER_PROJECT_NAME = "pdfchat-${BUILD_NUMBER}"
+        DOCKER_COMPOSE_PROJECT = 'pdf-chatbot-cicd'
     }
+    
     stages {
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
-                git branch: "${GIT_BRANCH}", 
-                url: "${GIT_REPO}"
+                // Checkout code from GitHub
+                checkout scm
             }
         }
-        stage('Build & Deploy') {
+        
+        stage('Build Backend') {
             steps {
-                sh """
-                docker-compose -p ${DOCKER_PROJECT_NAME} down || true  // Cleanup old containers
-                docker-compose -p ${DOCKER_PROJECT_NAME} up -d --build
-                """
+                dir('backend') {
+                    sh 'docker build -t pdf-chatbot-backend:latest .'
+                }
+            }
+        }
+        
+        stage('Build Frontend') {
+            steps {
+                dir('frontend') {
+                    sh 'docker build -t pdf-chatbot-frontend:latest .'
+                }
+            }
+        }
+        
+        stage('Deploy') {
+            steps {
+                // Run docker-compose with the specified project name
+                sh "docker-compose -p ${DOCKER_COMPOSE_PROJECT} -f docker-compose.yml up -d"
             }
         }
     }
+    
     post {
         always {
-            cleanWs()  // Clean workspace after build
+            // Clean up workspace
+            cleanWs()
+        }
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed!'
         }
     }
-}
+} 
