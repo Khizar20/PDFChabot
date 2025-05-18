@@ -1,45 +1,54 @@
-version: '3.8' # You can remove this line, it's obsolete
+version: '3.8'
 
 services:
-  frontend:
-    build: ./frontend       # This will now use your new Nginx-based Dockerfile
+  mongodb:
+    image: mongo:latest
+    container_name: pdf-chatbot-mongodb
     ports:
-      - "3001:80"           # Map host port 3001 to Nginx's container port 80
-    container_name: pdfchat-frontend-2 # Keep as per your requirement
-    # volumes:
-    #   - ./frontend:/usr/share/nginx/html # For development, this mounts your local 'frontend'
-                                          # folder into the container, overriding what was COPIED.
-                                          # For a CI/CD build pipeline focused on creating an image,
-                                          # you typically rely on the COPY in the Dockerfile and might
-                                          # omit this runtime volume, or use it only for local dev.
-                                          # For the assignment, you might not need this volume mount here
-                                          # as the build artifact (image) should contain the code.
-    depends_on:
-      - backend
-    # Add restart policy if you want containers to restart automatically
-    restart: unless-stopped
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - pdf-chatbot-network
 
   backend:
-    build: ./backend
-    ports:
-      - "5001:5000"       # FastAPI typically runs on 8000 or 5000 by default, adjust if needed
-    container_name: pdfchat-backend-2 # Keep as per your requirement
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pdf-chatbot-backend
     volumes:
-      - ./backend:/app    # This is good for development with FastAPI to see code changes
+      - ./backend:/app
+      - ./backend/public:/app/public
+    ports:
+      - "8000:8000"
     environment:
-      - MONGO_URI=mongodb://mongo:27017/pdfchat
+      - MONGODB_URI=mongodb://mongodb:27017/
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=${ALGORITHM}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+      - GROQ_API_KEY=${GROQ_API_KEY}
     depends_on:
-      - mongo
-    restart: unless-stopped
+      - mongodb
+    networks:
+      - pdf-chatbot-network
 
-  mongo:
-    image: mongo:latest
-    ports:
-      - "27018:27017"
-    container_name: pdfchat-mongo-2 # Keep as per your requirement
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pdf-chatbot-frontend
     volumes:
-      - mongo-data:/data/db
-    restart: unless-stopped
+      - ./frontend/public:/usr/share/nginx/html
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - pdf-chatbot-network
+
+networks:
+  pdf-chatbot-network:
+    name: pdf-chatbot-network
 
 volumes:
-  mongo-data:
+  mongodb_data: 
