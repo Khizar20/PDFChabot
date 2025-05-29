@@ -187,11 +187,8 @@ async def chat_with_pdf(pdf_id: str, user_message: str, current_user: dict = Dep
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Redirect to chatbot page after login
-#@app.get("/")
-#def redirect_to_chatbot():
-    #return RedirectResponse(url="/index.html")
 # Either remove this entirely or change to:
 @app.get("/api")
 def root():
-    return {"message": "API is running"}
+    return RedirectResponse(url="/index.html")
+
