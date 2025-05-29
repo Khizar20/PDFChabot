@@ -12,7 +12,7 @@ services:
       - pdf-chatbot-network
 
   backend:
-    build: 
+    build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: pdf-chatbot-backend
@@ -21,12 +21,8 @@ services:
       - ./backend/public:/app/public
     ports:
       - "8000:8000"
-    environment:
-      - MONGODB_URI=mongodb://mongodb:27017/
-      - SECRET_KEY=${SECRET_KEY}
-      - ALGORITHM=${ALGORITHM}
-      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
-      - GROQ_API_KEY=${GROQ_API_KEY}
+    env_file:
+      - .env
     depends_on:
       - mongodb
     networks:
@@ -37,8 +33,6 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: pdf-chatbot-frontend
-    volumes:
-      - ./frontend/public:/usr/share/nginx/html
     ports:
       - "3000:80"
     depends_on:
@@ -51,4 +45,4 @@ networks:
     name: pdf-chatbot-network
 
 volumes:
-  mongodb_data: 
+  mongodb_data:
