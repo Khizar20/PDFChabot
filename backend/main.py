@@ -190,5 +190,5 @@ async def chat_with_pdf(pdf_id: str, user_message: str, current_user: dict = Dep
 # Either remove this entirely or change to:
 @app.get("/api")
 def root():
-    return RedirectResponse(url="/index.html")
+    return {"message": "API is running"}
 
